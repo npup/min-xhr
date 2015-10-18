@@ -1,0 +1,25 @@
+{
+  "name": "min-xhr"
+  , "version": "0.9.0"
+  , "description": ""
+  , "main": "src/min-xhr.js"
+  , "directories": {
+      "test": "test"
+    }
+  , "dependencies": {
+      "qs": "lib/tar/qs-0.9.0.tgz"
+    }
+  , "scripts": {
+      "clean": "rm -f dist/*"
+      , "test": "echo \"Error: no test specified\" && exit 1"
+      , "build": "browserify src/min-xhr.js -o dist/min-xhr.dev.js && browserify src/min-xhr.js | uglifyjs > dist/min-xhr.js"
+    }
+  , "author": "P. Envall <petter.envall@gmail.com> (http://petter.envall.se/)"
+  , "license": "MIT"
+  , "devDependencies": {
+      "browserify": "^11.2.0"
+      , "chai": "^3.3.0"
+      , "mocha": "^2.3.3"
+      , "uglify-js": "^2.5.0"
+    }
+}
