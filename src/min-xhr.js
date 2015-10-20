@@ -14,7 +14,7 @@ function Xhr(method, url) {
   self.parameters = {};
   self.body = null;
   self.asynchronous = true;
-  self.callbacks = {};
+  self.callback = null;
   self.requestHeaders = {
     "X-Requested-With": "XMLHttpRequest"
     , "Content-Type": "application/x-www-form-urlencoded"
@@ -37,81 +37,86 @@ var getXhr = function () {
 Xhr.prototype = {
   "constructor": Xhr
   , "update": function (elem) {
-    var instance = this;
-    "string" == typeof elem && (elem = doc.getElementById(elem));
-    if (1!=elem.nodeType) {throw new Error("Can not update element "+elem);}
-    instance.elem = elem;
-    instance.send();
-  }
+      var instance = this;
+      "string" == typeof elem && (elem = doc.getElementById(elem));
+      if (1!=elem.nodeType) {throw new Error("Can not update element "+elem);}
+      instance.elem = elem;
+      instance.send();
+    }
   , "send": function () {
-    var self = this, query = qs.stringify(self.parameters);
-    if (query) {
-      switch (self.httpMethod) {
-        case "get":
-          self.url += /\/.*\?.*$/.exec(self.url) ? "&" : "?";
-          self.url += query;
-        break;
-        case "post":
-          self.body = query;
-        break;
-        default:
-          throw Error("Unsupported HTTP verb: "+self.httpMethod);
-        break;
+      var instance = this, query = qs.to(instance.parameters);
+      if (query) {
+        switch (instance.httpMethod) {
+          case "get":
+            instance.url += /\/.*\?.*$/.exec(instance.url) ? "&" : "?";
+            instance.url += query;
+          break;
+          case "post":
+            instance.body = query;
+          break;
+          default:
+            throw Error("Unsupported HTTP verb: "+instance.httpMethod);
+          break;
+        }
       }
+      instance.xhr.open(instance.httpMethod, instance.url, instance.asynchronous);
+      for (var header in instance.requestHeaders) {
+        instance.xhr.setRequestHeader(header, instance.requestHeaders[header]);
+      }
+      instance.xhr.onreadystatechange = function () {handleResponse.call(instance, instance.xhr);};
+      instance.xhr.send(instance.body);
     }
-    self.xhr.open(self.httpMethod, self.url, self.asynchronous);
-    for (var header in self.requestHeaders) {
-      self.xhr.setRequestHeader(header, self.requestHeaders[header]);
-    }
-    self.xhr.onreadystatechange = function () {handleResponse.call(self, self.xhr);};
-    self.xhr.send(self.body);
-  }
   , "params": function (params) {
-    return (this.parameters = params, this);
-  }
+      return (this.parameters = params, this);
+    }
   , "param": function (name, value) {
-    return (this.parameters[name] = value, this);
-  }
+      return (this.parameters[name] = value, this);
+    }
   , "headers": function (headers) {
-    for (var header in headers) {this.header(header, headers[header]);}
-    return this;
-  }
+      for (var header in headers) {this.header(header, headers[header]);}
+      return this;
+    }
   , "header": function (name, value) {
-    return (this.requestHeaders[name] = value, this);
-  }
+      return (this.requestHeaders[name] = value, this);
+    }
   , "content": function (type) {
-    return (this.requestHeaders["Content-Type"] = type, this);
-  }
-  , "ok": function (callback) {
-    return (this.callbacks.ok = callback, this);
-  }
-  , "err": function (callback) {
-    return (this.callbacks.err = callback, this);
-  }
+      return (this.requestHeaders["Content-Type"] = type, this);
+    }
+  , "handler": function (handler) {
+      return (this.callback = handler, this);
+    }
   , "async": function (async) {
-    return (this.asynchronous = !!async, this);
-  }
+      return (this.asynchronous = !!async, this);
+    }
 };
 
 var statusTypes = {2: "ok", 3: "ok", 4: "not-found", 5: "error"};
 function handleResponse(transp) {
-  if (transp.readyState == 4) {
-    var statusType = statusTypes[~~(transp.status/100)];
+  if (4 == transp.readyState) {
+    var instance = this
+      , statusType = statusTypes[~~(transp.status/100)];
     switch (statusType) {
       case "ok":
-        this.elem && (this.elem.innerHTML = this.xhr.responseText);
-        this.evalJs && xjs(this.xhr.responseText);
-        this.callbacks.ok && this.callbacks.ok(transp);
+        instance.elem && (instance.elem.innerHTML = instance.xhr.responseText);
+        instance.evalJs && xjs(instance.xhr.responseText);
+        if (instance.callback) {
+          var data = void 0;
+          if (2<instance.callback.length) { // parameter for json passed
+            try {data = JSON.parse(instance.xhr.responseText); }
+            catch(err) { data = null; }
+          }
+          instance.callback(null, transp, data);
+        }
       break;
       case "not-found":
       case "error":
-        this.callbacks.err && this.callbacks.err(transp);
+        instance.callback && instance.callback(transp, null);
       break;
       default:
-        throw new Error("Unknown status type ("+statusType+"), from code "+this.xhr.status);
+        throw new Error("Unknown status type ("+statusType+"), from code "+instance.xhr.status);
       break;
     }
-    this.xhr = null; /* !memory leak */
+    instance.xhr = null; /* !memory leak */
   }
 }
 

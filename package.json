@@ -1,25 +1,30 @@
 {
-  "name": "min-xhr"
-  , "version": "0.9.0"
-  , "description": ""
-  , "main": "src/min-xhr.js"
-  , "directories": {
-      "test": "test"
-    }
-  , "dependencies": {
-      "qs": "lib/tar/qs-0.9.0.tgz"
-    }
-  , "scripts": {
-      "clean": "rm -f dist/*"
-      , "test": "echo \"Error: no test specified\" && exit 1"
-      , "build": "browserify src/min-xhr.js -o dist/min-xhr.dev.js && browserify src/min-xhr.js | uglifyjs > dist/min-xhr.js"
-    }
-  , "author": "P. Envall <petter.envall@gmail.com> (http://petter.envall.se/)"
-  , "license": "MIT"
-  , "devDependencies": {
-      "browserify": "^11.2.0"
-      , "chai": "^3.3.0"
-      , "mocha": "^2.3.3"
-      , "uglify-js": "^2.5.0"
-    }
+  "name": "min-xhr",
+  "version": "0.9.0",
+  "description": "simple xhr lib",
+  "main": "src/min-xhr.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "qs": "lib/tar/qs-0.9.0.tgz"
+  },
+  "scripts": {
+    "clean": "rm -f dist/*",
+    "zuul-local": "zuul --local 4000 -- test/*.js test/client/*.js",
+    "zuul": "zuul -- test/*.js test/client/*.js",
+    "build": "browserify src/min-xhr.js --standalone minXhr -o dist/min-xhr.dev.js && browserify src/min-xhr.js --standalone minXhr | uglifyjs > dist/min-xhr.js"
+  },
+  "author": "P. Envall <petter.envall@gmail.com> (http://petter.envall.se/)",
+  "license": "MIT",
+  "devDependencies": {
+    "body-parser": "^1.14.1",
+    "browserify": "^11.2.0",
+    "cookie-parser": "^1.4.0",
+    "express": "^4.13.3",
+    "mocha": "^2.3.3",
+    "proclaim": "^3.3.2",
+    "uglify-js": "^2.5.0",
+    "zuul": "^3.6.0"
+  }
 }
