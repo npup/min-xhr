@@ -55,8 +55,8 @@ function Xhr(method, url) {
   self.asynchronous = true;
   self.callback = null;
   self.requestHeaders = {
-    "X-Requested-With": "XMLHttpRequest"
-    , "Content-Type": "application/x-www-form-urlencoded"
+    "Content-Type": "application/x-www-form-urlencoded"
+    //, "X-Requested-With": "XMLHttpRequest"
   };
 }
 
