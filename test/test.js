@@ -63,6 +63,21 @@ describe("instance obtained via `get`", function () {
       assert.equal(this.req.content.length, 1);
     });
 
+    it("should have a method `abort`, taking zero parameters", function () {
+      assert.isFunction(this.req.abort);
+      assert.equal(this.req.abort.length, 0);
+    });
+
+    it("should have a method `timeout`, taking one parameter", function () {
+      assert.isFunction(this.req.timeout);
+      assert.equal(this.req.timeout.length, 1);
+    });
+
+    it("should have a method `abort`, taking zero parameters", function () {
+      assert.isFunction(this.req.abort);
+      assert.equal(this.req.abort.length, 0);
+    });
+
   });
 
 });

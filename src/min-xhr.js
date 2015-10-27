@@ -2,7 +2,7 @@ var qs = require("qs");
 
 var doc = this.document, xjs;
 
-var statusTypes = {"2": "ok", "3": "ok", "4": "not-found", "5": "error"};
+var statusTypes = {"0": "aborted", "2": "ok", "3": "ok", "4": "not-found", "5": "error"};
 function handleResponse(transp) {
   if (4 == transp.readyState) {
     var instance = this
@@ -19,11 +19,13 @@ function handleResponse(transp) {
           }
           instance.callback(null, transp, data);
         }
-      break;
+        break;
       case "not-found":
       case "error":
         instance.callback && instance.callback(transp, null);
-      break;
+        break;
+      case "aborted":
+        break;
       default:
         throw new Error("Unknown status type ("+statusType+"), from code "+instance.xhr.status);
     }
@@ -47,13 +49,14 @@ var getXhr = function () {
 function Xhr(method, url) {
   var self = this;
   self.evalJs = true;
-  self.xhr = getXhr();
+  self.xhr = null;
   self.httpMethod = method;
   self.url = url;
   self.parameters = {};
   self.body = null;
   self.asynchronous = true;
   self.callback = null;
+  self.timeoutMs = null;
   self.requestHeaders = {
     "Content-Type": "application/x-www-form-urlencoded"
     //, "X-Requested-With": "XMLHttpRequest"
@@ -70,7 +73,9 @@ Xhr.prototype = {
       instance.send();
     }
   , "send": function () {
-      var instance = this, query = qs.to(instance.parameters);
+      var instance = this;
+      if (instance.xhr) { return; } // already sent
+      var query = qs.to(instance.parameters);
       if (query) {
         switch (instance.httpMethod) {
           case "get":
@@ -84,12 +89,21 @@ Xhr.prototype = {
             throw Error("Unsupported HTTP verb: "+instance.httpMethod);
         }
       }
+      instance.xhr = getXhr();
       instance.xhr.open(instance.httpMethod, instance.url, instance.asynchronous);
       for (var header in instance.requestHeaders) {
         instance.xhr.setRequestHeader(header, instance.requestHeaders[header]);
       }
       instance.xhr.onreadystatechange = function () {handleResponse.call(instance, instance.xhr);};
+      if (null != instance.timeoutMs) {
+        instance.xhr.timeout = instance.timeoutMs;
+        var xhr = instance.xhr;
+        instance.xhr.ontimeout = function () {
+          instance.callback && instance.callback(xhr, null);
+        };
+      }
       instance.xhr.send(instance.body);
+      return instance;
     }
   , "params": function (params) {
       return this.parameters = params, this;
@@ -113,9 +127,17 @@ Xhr.prototype = {
   , "async": function (async) {
       return this.asynchronous = !!async, this;
     }
+  , "abort": function () {
+      var instance = this, xhr = instance.xhr;
+      xhr.abort();
+      instance.callback && instance.callback(xhr, null);
+    }
+  , "timeout": function (ms) {
+      return this.timeoutMs = ms, this;
+    }
 };
 
-function req(method, url) {return new Xhr(method, url);}
+function req(method, url) { return new Xhr(method, url); }
 
 xjs = (function () {
   var win = window, doc = win.document;
